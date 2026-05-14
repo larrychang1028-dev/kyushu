@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>九州記帳</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="九州記帳">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23c0392b'/%3E%3Ctext x='90' y='115' font-size='90' text-anchor='middle'%3E🍜%3C/text%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, 'Hiragino Sans', 'Noto Sans TC', sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white;
+    padding: 16px 20px 12px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; }
+  header p { font-size: 0.78rem; opacity: 0.85; margin-top: 2px; }
+
+  .rate-bar {
+    background: #2d3748;
+    color: #e2e8f0;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .rate-bar input {
+    width: 70px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid #4a5568;
+    background: #4a5568;
+    color: white;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  /* 日期 Tab */
+  .day-tabs {
+    display: flex;
+    overflow-x: auto;
+    background: #fff;
+    border-bottom: 2px solid #e2e8f0;
+    scrollbar-width: none;
+  }
+  .day-tabs::-webkit-scrollbar { display: none; }
+
+  .day-tab {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    text-align: center;
+    cursor: pointer;
+    color: #718096;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .day-tab.active {
+    color: #c0392b;
+    border-bottom-color: #c0392b;
+    font-weight: 700;
+    background: #fff5f5;
+  }
+
+  /* 新增表單 */
+  .add-form {
+    background: white;
+    margin: 12px;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+
+  .add-form h3 {
+    font-size: 0.9rem;
+    color: #2d3748;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .form-row label {
+    font-size: 0.72rem;
+    color: #718096;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .form-row > div { flex: 1; }
+
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: #f8fafc;
+    appearance: none;
+    -webkit-appearance: none;
+    color: #2d3748;
+  }
+
+  select:focus, input:focus {
+    outline: none;
+    border-color: #c0392b;
+    background: white;
+  }
+
+  .currency-toggle {
+    display: flex;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .currency-toggle button {
+    flex: 1;
+    padding: 11px 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a0aec0;
+    transition: all 0.2s;
+  }
+
+  .currency-toggle button.active {
+    background: #c0392b;
+    color: white;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .cat-btn {
+    padding: 10px 4px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #4a5568;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .cat-btn.selected {
+    background: #fff5f5;
+    border-color: #c0392b;
+    color: #c0392b;
+    font-weight: 700;
+  }
+
+  .btn-add {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+    active: transform: scale(0.98);
+  }
+
+  .btn-add:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* 總計 */
+  .summary-box {
+    margin: 0 12px 12px;
+    background: white;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+
+  .summary-box h3 {
+    font-size: 0.8rem;
+    color: #718096;
+    margin-bottom: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-totals {
+    display: flex;
+    gap: 10px;
+  }
+
+  .summary-card {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+
+  .summary-card .label { font-size: 0.7rem; color: #a0aec0; margin-bottom: 2px; }
+  .summary-card .amount { font-size: 1.1rem; font-weight: 700; color: #2d3748; }
+  .summary-card.highlight .amount { color: #c0392b; }
+
+  .summary-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .summary-cat-tag {
+    font-size: 0.72rem;
+    background: #f0f4f8;
+    border-radius: 20px;
+    padding: 4px 10px;
+    color: #4a5568;
+  }
+
+  /* 明細列表 */
+  .records-section {
+    margin: 0 12px 80px;
+  }
+
+  .records-section h3 {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-bottom: 8px;
+    font-weight: 600;
+    padding-left: 4px;
+  }
+
+  .record-item {
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .record-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .record-info { flex: 1; min-width: 0; }
+  .record-desc { font-size: 0.9rem; font-weight: 600; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-meta { font-size: 0.72rem; color: #a0aec0; margin-top: 1px; }
+
+  .record-amount { text-align: right; flex-shrink: 0; }
+  .record-amount .main { font-size: 1rem; font-weight: 700; color: #2d3748; }
+  .record-amount .sub { font-size: 0.7rem; color: #a0aec0; }
+
+  .record-delete {
+    background: none;
+    border: none;
+    color: #cbd5e0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  .record-delete:active { color: #c0392b; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0aec0;
+    font-size: 0.9rem;
+  }
+
+  .empty-state .emoji { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+  /* 全部總計 bar */
+  .total-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #2d3748;
+    color: white;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+    z-index: 99;
+  }
+
+  .total-bar-item { text-align: center; }
+  .total-bar-item .lbl { font-size: 0.65rem; opacity: 0.6; margin-bottom: 1px; }
+  .total-bar-item .val { font-size: 0.95rem; font-weight: 700; }
+  .total-bar-item .val.red { color: #fc8181; }
+
+  .divider { width: 1px; height: 30px; background: #4a5568; }
+</style>
+</head>
+<body>
+
+<!-- 安裝引導彈窗 -->
+<div id="installGuide" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:flex-end;justify-content:center;">
+  <div style="background:white;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:2.5rem">🍜</div>
+      <div style="font-weight:800;font-size:1.1rem;margin:8px 0 4px">加到主畫面，像 APP 一樣使用</div>
+      <div style="color:#718096;font-size:0.85rem">離線可用・資料自動儲存</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="background:#007aff;color:white;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">1</div>
+        <div style="font-size:0.9rem">用 <strong>Safari</strong> 開啟這個頁面</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="background:#007aff;color:white;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">2</div>
+        <div style="font-size:0.9rem">點底部 <strong>「分享」按鈕</strong> ⬆️</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="background:#007aff;color:white;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">3</div>
+        <div style="font-size:0.9rem">向下滑，點「<strong>加入主畫面</strong>」📲</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:#007aff;color:white;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">4</div>
+        <div style="font-size:0.9rem">點右上角「<strong>新增</strong>」完成 ✅</div>
+      </div>
+    </div>
+    <button onclick="dismissInstall()" style="width:100%;padding:14px;background:#c0392b;color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;">
+      我知道了，先用用看
+    </button>
+  </div>
+</div>
+
+<header>
+  <h1>🍜 九州福岡記帳</h1>
+  <p>2026 / 5 / 19（二）— 5 / 24（日）</p>
+</header>
+
+<div class="rate-bar">
+  💱 匯率：1 JPY =
+  <input type="number" id="rateInput" value="0.219" step="0.001" min="0.1" max="0.5" onchange="updateRate()">
+  TWD
+</div>
+
+<!-- 日期 Tab -->
+<div class="day-tabs" id="dayTabs"></div>
+
+<!-- 新增表單 -->
+<div class="add-form">
+  <h3>➕ 新增消費</h3>
+  <div class="cat-grid" id="catGrid"></div>
+
+  <div class="form-row">
+    <div style="flex:2">
+      <label>說明（可略）</label>
+      <input type="text" id="descInput" placeholder="例：一蘭拉麵" maxlength="30">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div style="flex:1">
+      <label>幣別</label>
+      <div class="currency-toggle">
+        <button id="btnJPY" class="active" onclick="setCurrency('JPY')">¥ 日圓</button>
+        <button id="btnTWD" onclick="setCurrency('TWD')">$ 台幣</button>
+      </div>
+    </div>
+    <div style="flex:1.2">
+      <label>金額</label>
+      <input type="number" id="amountInput" placeholder="0" min="0" inputmode="decimal">
+    </div>
+  </div>
+
+  <button class="btn-add" onclick="addRecord()">記帳</button>
+</div>
+
+<!-- 當日總計 -->
+<div class="summary-box" id="summaryBox"></div>
+
+<!-- 明細 -->
+<div class="records-section">
+  <h3 id="recordsTitle"></h3>
+  <div id="recordsList"></div>
+</div>
+
+<!-- 底部全程總計 -->
+<div class="total-bar">
+  <div class="total-bar-item">
+    <div class="lbl">全程總計（台幣）</div>
+    <div class="val red" id="totalBarTWD">$0</div>
+  </div>
+  <div class="divider"></div>
+  <div class="total-bar-item">
+    <div class="lbl">已記帳筆數</div>
+    <div class="val" id="totalBarCount">0 筆</div>
+  </div>
+  <div class="divider"></div>
+  <div class="total-bar-item">
+    <div class="lbl">今日（台幣）</div>
+    <div class="val" id="totalBarToday">$0</div>
+  </div>
+</div>
+
+<script>
+const DAYS = [
+  { key: 'd1', label: '5/19', sub: '第1天', emoji: '✈️' },
+  { key: 'd2', label: '5/20', sub: '第2天', emoji: '🌸' },
+  { key: 'd3', label: '5/21', sub: '第3天', emoji: '🍜' },
+  { key: 'd4', label: '5/22', sub: '第4天', emoji: '🛍️' },
+  { key: 'd5', label: '5/23', sub: '第5天', emoji: '🚃' },
+  { key: 'd6', label: '5/24', sub: '第6天', emoji: '🏠' },
+];
+
+const CATS = [
+  { key: 'transport', label: '交通', emoji: '🚃', color: '#3498db', bg: '#ebf5fb' },
+  { key: 'food',      label: '餐飲', emoji: '🍜', color: '#e67e22', bg: '#fef9e7' },
+  { key: 'hotel',     label: '住宿', emoji: '🏨', color: '#8e44ad', bg: '#f5eef8' },
+  { key: 'shopping',  label: '購物', emoji: '🛍️', color: '#27ae60', bg: '#eafaf1' },
+  { key: 'ticket',    label: '票券', emoji: '🎫', color: '#c0392b', bg: '#fdedec' },
+  { key: 'other',     label: '其他', emoji: '📌', color: '#7f8c8d', bg: '#f2f3f4' },
+];
+
+let records = JSON.parse(localStorage.getItem('kyushu2026') || '[]');
+let currentDay = 'd1';
+let currentCat = 'food';
+let currentCurrency = 'JPY';
+let exchangeRate = parseFloat(localStorage.getItem('kyushu_rate') || '0.219');
+
+function saveData() {
+  localStorage.setItem('kyushu2026', JSON.stringify(records));
+  localStorage.setItem('kyushu_rate', exchangeRate.toString());
+}
+
+function updateRate() {
+  exchangeRate = parseFloat(document.getElementById('rateInput').value) || 0.219;
+  saveData();
+  render();
+}
+
+function setCurrency(c) {
+  currentCurrency = c;
+  document.getElementById('btnJPY').classList.toggle('active', c === 'JPY');
+  document.getElementById('btnTWD').classList.toggle('active', c === 'TWD');
+}
+
+function toTWD(amount, currency) {
+  if (currency === 'TWD') return amount;
+  return Math.round(amount * exchangeRate);
+}
+
+function formatAmount(amount, currency) {
+  if (currency === 'JPY') return '¥' + amount.toLocaleString();
+  return '$' + amount.toLocaleString();
+}
+
+function buildDayTabs() {
+  const el = document.getElementById('dayTabs');
+  el.innerHTML = DAYS.map(d => `
+    <div class="day-tab ${d.key === currentDay ? 'active' : ''}" onclick="selectDay('${d.key}')">
+      <div>${d.emoji} ${d.label}</div>
+      <div style="font-size:0.65rem;opacity:0.7">${d.sub}</div>
+    </div>
+  `).join('');
+}
+
+function buildCatGrid() {
+  const el = document.getElementById('catGrid');
+  el.innerHTML = CATS.map(c => `
+    <div class="cat-btn ${c.key === currentCat ? 'selected' : ''}"
+         onclick="selectCat('${c.key}')"
+         style="${c.key === currentCat ? `background:${c.bg};border-color:${c.color};color:${c.color}` : ''}">
+      ${c.emoji}<br>${c.label}
+    </div>
+  `).join('');
+}
+
+function buildSummary() {
+  const dayRecs = records.filter(r => r.day === currentDay);
+  const totalTWD = dayRecs.reduce((s, r) => s + toTWD(r.amount, r.currency), 0);
+  const totalJPY = dayRecs.filter(r => r.currency === 'JPY').reduce((s, r) => s + r.amount, 0);
+  const totalNTD = dayRecs.filter(r => r.currency === 'TWD').reduce((s, r) => s + r.amount, 0);
+
+  const catTotals = {};
+  dayRecs.forEach(r => {
+    if (!catTotals[r.cat]) catTotals[r.cat] = 0;
+    catTotals[r.cat] += toTWD(r.amount, r.currency);
+  });
+
+  const dayInfo = DAYS.find(d => d.key === currentDay);
+  const el = document.getElementById('summaryBox');
+
+  el.innerHTML = `
+    <h3>${dayInfo.emoji} ${dayInfo.label} ${dayInfo.sub} 小計</h3>
+    <div class="summary-totals">
+      <div class="summary-card">
+        <div class="label">日圓消費</div>
+        <div class="amount">¥${totalJPY.toLocaleString()}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">台幣消費</div>
+        <div class="amount">$${totalNTD.toLocaleString()}</div>
+      </div>
+      <div class="summary-card highlight">
+        <div class="label">折台幣合計</div>
+        <div class="amount">$${totalTWD.toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="summary-cats">
+      ${CATS.map(c => {
+        const v = catTotals[c.key];
+        if (!v) return '';
+        return `<span class="summary-cat-tag">${c.emoji} ${c.label} $${v.toLocaleString()}</span>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function buildRecords() {
+  const dayRecs = records.filter(r => r.day === currentDay).slice().reverse();
+  const dayInfo = DAYS.find(d => d.key === currentDay);
+  document.getElementById('recordsTitle').textContent = `${dayInfo.label} 明細（${dayRecs.length} 筆）`;
+
+  const el = document.getElementById('recordsList');
+  if (dayRecs.length === 0) {
+    el.innerHTML = `<div class="empty-state"><span class="emoji">📝</span>還沒有記帳<br>快記錄第一筆消費吧！</div>`;
+    return;
+  }
+
+  el.innerHTML = dayRecs.map(r => {
+    const cat = CATS.find(c => c.key === r.cat);
+    const twd = toTWD(r.amount, r.currency);
+    const subText = r.currency === 'JPY'
+      ? `≈ $${twd.toLocaleString()} TWD`
+      : `≈ ¥${Math.round(r.amount / exchangeRate).toLocaleString()} JPY`;
+    return `
+      <div class="record-item">
+        <div class="record-icon" style="background:${cat.bg}">
+          ${cat.emoji}
+        </div>
+        <div class="record-info">
+          <div class="record-desc">${r.desc || cat.label}</div>
+          <div class="record-meta">${cat.label} · ${r.currency}</div>
+        </div>
+        <div class="record-amount">
+          <div class="main">${formatAmount(r.amount, r.currency)}</div>
+          <div class="sub">${subText}</div>
+        </div>
+        <button class="record-delete" onclick="deleteRecord('${r.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildTotalBar() {
+  const totalTWD = records.reduce((s, r) => s + toTWD(r.amount, r.currency), 0);
+  const todayTWD = records.filter(r => r.day === currentDay).reduce((s, r) => s + toTWD(r.amount, r.currency), 0);
+  document.getElementById('totalBarTWD').textContent = '$' + totalTWD.toLocaleString();
+  document.getElementById('totalBarCount').textContent = records.length + ' 筆';
+  document.getElementById('totalBarToday').textContent = '$' + todayTWD.toLocaleString();
+}
+
+function render() {
+  document.getElementById('rateInput').value = exchangeRate;
+  buildDayTabs();
+  buildCatGrid();
+  buildSummary();
+  buildRecords();
+  buildTotalBar();
+}
+
+function selectDay(key) {
+  currentDay = key;
+  render();
+}
+
+function selectCat(key) {
+  currentCat = key;
+  buildCatGrid();
+}
+
+function addRecord() {
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  if (!amount || amount <= 0) {
+    document.getElementById('amountInput').focus();
+    document.getElementById('amountInput').style.borderColor = '#c0392b';
+    setTimeout(() => document.getElementById('amountInput').style.borderColor = '', 1000);
+    return;
+  }
+
+  const desc = document.getElementById('descInput').value.trim();
+  records.push({
+    id: Date.now().toString(),
+    day: currentDay,
+    cat: currentCat,
+    currency: currentCurrency,
+    amount: amount,
+    desc: desc,
+    time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+  });
+
+  saveData();
+  document.getElementById('amountInput').value = '';
+  document.getElementById('descInput').value = '';
+  render();
+
+  // 滾到明細區
+  setTimeout(() => {
+    document.querySelector('.records-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function deleteRecord(id) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  records = records.filter(r => r.id !== id);
+  saveData();
+  render();
+}
+
+// 安裝引導
+function checkInstallPrompt() {
+  const isStandalone = window.navigator.standalone === true;
+  const dismissed = localStorage.getItem('installDismissed');
+  if (!isStandalone && !dismissed) {
+    document.getElementById('installGuide').style.display = 'flex';
+  }
+}
+function dismissInstall() {
+  localStorage.setItem('installDismissed', '1');
+  document.getElementById('installGuide').style.display = 'none';
+}
+
+// 初始化
+render();
+checkInstallPrompt();
+</script>
+</body>
+</html>
